@@ -5,7 +5,6 @@
 https://ieeexplore.ieee.org/document/10833868
 
 您可以通过以下信息引用：
-```bibtex
 @article{greenwade93,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
     title   = "Enhancing Object Detection With Fourier Series",
