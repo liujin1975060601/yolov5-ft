@@ -19,6 +19,9 @@ https://ieeexplore.ieee.org/document/10833868
 以下是coco2017数据集模型推理视频展示：
 ![推理视频1](demos/videos/road-cars-s.mp4)
 
+Rotated Object Detection Demos
+![Image description](demos/dota1.5/1706_P1090_1_0.jpg)
+
 以下是几张推理可视化图片：
 ![Image description](demos/000000000785.jpg)
 ![Image description](https://example.com/path/to/image2.png)
