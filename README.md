@@ -27,7 +27,7 @@ Rotated Object Detection Demos
 
 ### 推理可视化
 以下是coco2017数据集模型推理视频展示：
-![推理视频1](demos/videos/road-cars-s_20250205_23160389.mp4)
+![推理视频1](demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4)
 
 
 ??????这里给出4个模型下载链接
