@@ -20,9 +20,9 @@ https://ieeexplore.ieee.org/document/10833868
 ![推理视频1](demos/videos/road-cars-s.mp4)
 
 以下是几张推理可视化图片：
-![推理示例1](demos/000000000785.jpg)
-![推理示例2](https://example.com/path/to/image2.png)
-![推理示例3](https://example.com/path/to/image3.png)
+![Image description](demos/000000000785.jpg)
+![Image description](https://example.com/path/to/image2.png)
+![Image description](https://example.com/path/to/image3.png)
 
 ??????这里给出4个模型下载链接
 coco2017模型下载链接
