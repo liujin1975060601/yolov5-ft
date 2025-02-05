@@ -27,15 +27,16 @@ Rotated Object Detection Demos
 
 ### 推理可视化
 以下是 COCO2017 数据集模型推理视频展示：
-<video width="640" height="360" controls>
+<video width="640" height="360" controls playsinline>
   <source src="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person+cars+dog_20250206_00295546.mp4" type="video/mp4">
   COCO2017 数据集模型推理视频展示，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person+cars+dog_20250206_00295546.mp4">点击这里观看视频</a>。
 </video>
 
-<video width="640" height="360" controls>
+<video width="640" height="360" controls playsinline>
   <source src="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4" type="video/mp4">
   COCO2017 数据集模型推理视频展示，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4">点击这里观看视频</a>。
 </video>
+
 
 
 ??????这里给出4个模型下载链接
