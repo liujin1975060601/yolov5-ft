@@ -5,6 +5,7 @@
 https://ieeexplore.ieee.org/document/10833868
 
 您可以通过以下信息引用：
+```bibtex
 @article{greenwade93,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
     title   = "Enhancing Object Detection With Fourier Series",
@@ -13,6 +14,7 @@ https://ieeexplore.ieee.org/document/10833868
     DOI = 10.1109/TPAMI.2025.3526990
     pages   = "1-17"
 }
+```bibtex
 
 Rotated Object Detection Demos
 ![Image description](demos/dota1.5/1706_P1090_1_0.jpg)
