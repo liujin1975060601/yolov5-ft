@@ -17,12 +17,13 @@ https://ieeexplore.ieee.org/document/10833868
 ```
 
 Rotated Object Detection Demos
-![Image description](demos/dota1.5/1706_P1090_1_0.jpg)
+![Image description](demos/coco2017/000000013729.jpg)
+![Image description](demos/coco2017/000000014226.jpg)
+![Image description](demos/dota1.5/P0007_2_0.jpg)
+![Image description](demos/dota1.5/P0128_8_0.jpg)
+![Image description](demos/dota1.5-10terms/patches_P0000_84_0.jpg)
+![Image description](demos/dota1.5-10terms/patches_P1067_1_0.jpg)
 
-以下是几张推理可视化图片：
-![Image description](demos/000000000785.jpg)
-![Image description](https://example.com/path/to/image2.png)
-![Image description](https://example.com/path/to/image3.png)
 
 ### 推理可视化
 以下是coco2017数据集模型推理视频展示：
