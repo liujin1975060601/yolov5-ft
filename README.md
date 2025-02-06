@@ -9,7 +9,7 @@ https://ieeexplore.ieee.org/document/10833868
 @article{greenwade93,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
     title   = "Enhancing Object Detection With Fourier Series",
-    year    = "2005",
+    year    = "2025",
     journal = "IEEE Transactions on Pattern Analysis and Machine Intelligence",
     DOI = 10.1109/TPAMI.2025.3526990
     pages   = "1-17"
@@ -29,11 +29,11 @@ Rotated Object Detection Demos
 以下是 COCO2017 数据集模型推理视频展示：
 <video width="640" height="360" controls>
   <source src="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person-cars-dog_20250206_00295546.mp4" type="video/mp4">
-  你的浏览器不支持播放此视频，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person-cars-dog_20250206_00295546.mp4">点击这里下载视频</a>。
+  你的浏览器不支持播放此视频，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person-cars-dog_20250206_00295546.mp4">点击这里播放视频</a>。
 </video>
 <video width="640" height="360" controls>
   <source src="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4" type="video/mp4">
-  你的浏览器不支持播放此视频，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4">点击这里下载视频</a>。
+  你的浏览器不支持播放此视频，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4">点击这里播放视频</a>。
 </video>
 
 
