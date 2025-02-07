@@ -57,7 +57,7 @@ This code is an improvement based on the YOLOv5 architecture, with the training 
 
 
 ## Install DOTA_Devkit
-### 如果在window要根据情况,转换一下cpp的编码格式再进行编译
+If you are on Windows, please compile according to the following steps first.
 ```
 sudo apt-get install swig
 cd DOTA_devkit/polyiou
