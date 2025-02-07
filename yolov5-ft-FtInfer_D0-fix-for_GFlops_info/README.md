@@ -1,5 +1,6 @@
 # yolov5-ft
 YOLOv5-FT is a Fourier series-based object detection model built upon the YOLO architecture, designed to detect objects of arbitrary shapes in complex environments. Unlike traditional object detection, YOLOv5-FT outputs a semantic equation constructed from the Fourier series of the target, providing a more precise and detailed description of the object. The paper was published in
+
 [1]Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu, Enhancing Object Detection With Fourier Series, IEEE Transactions on Pattern Analysis and Machine Intelligence, 08 January 2025, pp1-17, Print ISSN: 0162-8828, CD:2160-9292, ISSN:1939-3539, DOI: 10.1109/TPAMI.2025.3526990
 https://ieeexplore.ieee.org/document/10833868
 
