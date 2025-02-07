@@ -1,10 +1,9 @@
 # yolov5-ft
- yolov5-ft是一个基于yolo架构的傅里叶级数目标检测，支持复杂环境下任意形状目标检测。
-与传统目标检测不同的是，yolov5-ft输出目标的傅里叶级数构建的语义方程，从而更精确细致地描述目标。论文发表在
+YOLOv5-FT is a Fourier series-based object detection model built upon the YOLO architecture, designed to detect objects of arbitrary shapes in complex environments. Unlike traditional object detection, YOLOv5-FT outputs a semantic equation constructed from the Fourier series of the target, providing a more precise and detailed description of the object. The paper was published in
 [1]Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu, Enhancing Object Detection With Fourier Series, IEEE Transactions on Pattern Analysis and Machine Intelligence, 08 January 2025, pp1-17, Print ISSN: 0162-8828, CD:2160-9292, ISSN:1939-3539, DOI: 10.1109/TPAMI.2025.3526990
 https://ieeexplore.ieee.org/document/10833868
 
-您可以通过以下信息引用：
+You can cite this paper as follows:
 ```bibtex
 @article{greenwade93,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
@@ -15,6 +14,9 @@ https://ieeexplore.ieee.org/document/10833868
     pages   = "1-17"
 }
 ```
+You can contact us through:
+Tel,WeChat:13397188592
+QQEmail:41038331@qq.com
 
 Rotated Object Detection Demos
 ![Image description](demos/coco2017/000000013729.jpg)
@@ -25,8 +27,8 @@ Rotated Object Detection Demos
 ![Image description](demos/dota1.5-10terms/patches_P1067_1_0.jpg)
 
 
-### 推理可视化
-以下是 COCO2017 数据集模型推理视频展示：
+### Inference Visualization
+Below is a video demonstration of the model inference on the COCO 2017 dataset:
 <video width="640" height="360" controls>
   <source src="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person-cars-dog_20250206_00295546.mp4" type="video/mp4">
   你的浏览器不支持播放此视频，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road_person-cars-dog_20250206_00295546.mp4">点击这里播放视频</a>。
@@ -36,16 +38,14 @@ Rotated Object Detection Demos
   你的浏览器不支持播放此视频，请<a href="https://liujin1975060601.github.io/yolov5-ft/demos/videos/road-cars-s_20250205_23160389_20250205_23205007.mp4">点击这里播放视频</a>。
 </video>
 
+The YOLOv5-FT model supports the following four datasets:
+coco2017
+dota1.5
+hrsc2016
+UCAS
 
-
-
-??????这里给出4个模型下载链接
-coco2017模型下载链接
-dota1.5模型下载链接
-hrsc2016模型下载链接
-UCAS模型下载链接
-
-本代码是在yolov5架构基础上改进，训练和验证操作方法和模块组织架构和yolov5一致。
-train.py启动训练（指出训练数据集data,模型架构cfg和预训练权重weights）
-val.py启动验证（指出模型权重weights和数据集data）
-detect.py启动检测图像或视频（指明模型权重weights和被检测文件夹路径source）
+### Instructions
+This code is an improvement based on the YOLOv5 architecture, with the training and validation operations and module organization consistent with YOLOv5.
+train.py starts training (specify the training dataset data, model architecture cfg, and pre-trained weights weights).
+val.py starts validation (specify model weights weights and dataset data).
+detect.py starts image or video detection (specify model weights weights and the source folder path to be detected source).
