@@ -15,10 +15,10 @@ You can cite this paper as follows:
 }
 ```
 You can contact us through:
-Tel,WeChat:13397188592
-QQEmail:41038331@qq.com
+-Tel,WeChat:13397188592
+-QQEmail:41038331@qq.com
 
-Rotated Object Detection Demos
+yolo-ft Object Detection Demos
 ![Image description](demos/coco2017/000000013729.jpg)
 ![Image description](demos/coco2017/000000014226.jpg)
 ![Image description](demos/dota1.5/P0007_2_0.jpg)
