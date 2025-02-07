@@ -46,6 +46,11 @@ UCAS
 
 ### Instructions
 This code is an improvement based on the YOLOv5 architecture, with the training and validation operations and module organization consistent with YOLOv5.
-train.py starts training (specify the training dataset data, model architecture cfg, and pre-trained weights weights).
-val.py starts validation (specify model weights weights and dataset data).
-detect.py starts image or video detection (specify model weights weights and the source folder path to be detected source).
+- `train.py` starts training  
+  (specify the training dataset `data`, model architecture `cfg`, and pre-trained weights `weights`).
+
+- `val.py` starts validation  
+  (specify model weights `weights` and dataset `data`).
+
+- `detect.py` starts image or video detection  
+  (specify model weights `weights` and the source folder path to be detected `source`).
