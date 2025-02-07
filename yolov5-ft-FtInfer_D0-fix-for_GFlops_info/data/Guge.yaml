@@ -1,0 +1,28 @@
+
+# dota768
+# path: /home/LIESMARS/2019286190105/datasets/final-master/DOTA/DOTA1.0-1.5
+#path: /home/liu/darknet/datas/GuGe
+#615
+#path: /home/liu/data/home/liu/workspace/darknet/datas/GuGe/
+#4090
+path: /media/liu/088d8f6e-fca3-4aed-871f-243ad962413b/datas/GuGe
+
+train: images
+val: val/images
+# val_big: big/images
+
+# Classes
+# nc: 16  # number of classes
+# names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle',
+#                   'ship', 'tennis-court',
+#                   'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool',
+#                   'helicopter', 'container-crane']
+
+nc: 19
+names: ['frigate', 'not boats', 'Combat boat', 'Military auxiliary ship', 'Other military ships', 'submarine',
+        'Supply ship', 'Tanker',
+        'bulk carrier', 'Container ship', 'Other civil ships', 'destroyer', 'uncertain', 'Fishing boat',
+        'Ro-Ro Ship', 'Sightseeing Boat', 'Cruiser', 'Amphibious carrier', 'aircraft carrier']
+mask_dir: [2,0,2,2,2,2,2,2,2,2,2,2,0,2,2,2,2,2,2]
+#ft_coef: 4
+val_epoch: 5

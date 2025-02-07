@@ -1,0 +1,18 @@
+
+path: /media/liu/f4854541-32b0-4d00-84a6-13d3a5dd30f2/datas/UCAS/
+train: train/patches/images
+val: val/patches/images
+#debug, change to val future
+
+# Classes
+nc: 2  # number of classes
+
+names: ['plane','car']
+
+# ft_coef: 1
+# val_epoch: 10
+ft_coef: 4
+lamda: 1.0
+d0: 2.0
+val_epoch: 5
+

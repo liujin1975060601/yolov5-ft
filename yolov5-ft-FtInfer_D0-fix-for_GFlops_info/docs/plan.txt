@@ -1,0 +1,78 @@
+刚刚升级版本yolov5-ft-path-_exist.zip做了以下更新：
+3.新建工程的时候以数据集名称为后缀
+2.labels判断文件夹是否存在，不存在发红色警告
+3.判断datas/数据文件夹，训练集和验证集文件夹是否存在，不存在发红色
+警告
+4.判断backbone yolov5s是否存在，不存在发红色警告
+5.验证val的时候，project_name跟随opt.data的原名自动更换，opt.project 
+= replace_last_path(opt.project,Path(opt.data).stem)
+
+还有以下问题待解决
+1.Hiou vs contour-IOU
+6.验证val的时候ft_coef那一栏依然很大，应该不是loss，val其他值都是OK
+的
+7.pts旋转框推理，pts模式的兼容性问题。
+8.与原版yolov5兼容
+   0.原版
+   1.旋转框pts
+   2.ft
+   3.二级属性
+   4.9DPose
+   所有数据集（guge,hrsc2016,voc_segment,dota），4种工作模式（原版y
+olo水平框，旋转框pts+mask_dir，2级属性，ft闭合曲线预测）兼容性问题
+2.当data.yaml里面没有路径ft_coef的时候，好像也是莫名奇妙引发其他地
+方报错,看哪里出了问题发红色警告
+9.ft模型自动构建分离开来, 也可以通过编辑.yaml文件编辑模型，支持dota
+_yolov5-s.yaml直接读取模型架构方式
+10.水平框的loss权重降低，测试完全抛弃水平框，推理时根据重建的闭合
+曲线得到水平框
+     抛弃掉对w,h的回归学习，直接回归目标的傅里叶级数
+5.不同iou_thresh对应不同AP50绘制出曲线
+2.新建模型模式需要强行改代码resume=False避免覆盖
+11.考虑修改评估模式：
+1）利用rotbox计算iou，进而修改评估模式
+2）利用rotbox计算iou，进而修改nms部分处理代码
+因为旋转傅里叶框有25%的交叠说明两个精细边缘的目标有比较多的重叠
+了，要合并
+水平框不一样，因为水平框会存在大量非目标区域，水平框的50%重叠时
+，真正目标区域重叠也就25%
+理想状况下iou_thresh=0都是合理的，2目标的闭合曲线已经勾勒得比较细
+致，之间只要有重叠就很有可能是同一个目标
+
+
+
+
+
+后期改进计划--2023.6.8
+1.objgt=0随机挑选
+2.obj限制上限
+3.out_of_image iou
+4.shift aug
+5.resume=True改成判断.pt文件存在就=True
+6.val_epoch: 1放到模型配置里面好一些
+
+还原内容
+1.obj_loss
+utils/loss.py
+offset: 1
+max_obj: 0
+pn_obj: 1 #0.4 #0.01
+scale_obj: 1
+
+2.remove_out_of_image()
+utils/dataaug_poly.py
+if self.adjust_filt:
+            cross_adjust(boxes_aug.polygons)
+            boxes_aug.polygons = out_range_filt(boxes_aug.polygons, image.shape, self.iou_thresh)
+        else:
+            # boxes_aug = boxes_aug.remove_out_of_image().clip_out_of_image()
+            boxes_aug = boxes_aug.remove_out_of_image()#角落部分小目标绕中心点旋转目标可能出界，剔除掉
+3
+utils/dataaug_poly.py
+class ImageAugPoly:
+    def __init__(self) -> None:
+        # self.augments = [seq, oneof_aug, fliplr, flipud, flipone, rotate, rotate2, shear, crop, blur, translate]
+        self.augments = [seq, oneof_aug, rotateone, shear, crop, blur, translate2]#
+
+4.utils/datasets.py
+        labels = filt_labels_H(torch.from_numpy(labels),self.least_pixel_size,self.least_area).numpy()

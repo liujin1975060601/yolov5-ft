@@ -1,0 +1,12 @@
+6.评估与准则
+val.py的主ran函数里面主张图像推理完成之后会得到预测框predn和真值标注框labelsn之间的匹配关系矩阵
+correct = process_batch_poly(predn, labelsn, iouv)
+#得到预测框pred对应的真值匹配bool矩阵correct[预测目标数量,iou阈值数量]
+再通过list容器stats搜集起来：
+#pred的8列是预测目标conf，9列是预测目标cls
+stats.append((correct.cpu(), pred[:, 8].cpu(), pred[:, 9].cpu(), tcls)) #(correct, conf, pcls, tcls)
+最后通过：
+p, r, ap, f1, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
+        ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
+        mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
+得到每类ap,ap50

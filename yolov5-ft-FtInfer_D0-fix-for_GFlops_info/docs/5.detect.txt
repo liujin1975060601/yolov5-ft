@@ -1,0 +1,115 @@
+#模型部分#####################################################
+在models/yolo.py模块里
+Detect模块是输出模块
+__init__()构造函数里，又经过了一个卷积层确保了输出通道数是na(5+nc)，所以不用在模型定义里面显式定义通道数和nc符合
+self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)
+
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])#注意这里经过了self.m卷积函数之后，模型的输出通道数量与na(5+nc)符合了！
+
+Detect
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+
+            if not self.training:  # inference
+                if self.onnx_dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                    self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+                    #self.grid[i][1,na,H,W,2]是网格整数坐标    self.anchor_grid[i][1,na,H,W,2]
+                    #注意：stride就是一个网格包含多少像素   anchors[]里面就是锚定框相对于网格的倍数*stride就是锚定框的像素数，详见_make_grid
+
+                y = x[i].sigmoid()
+                if self.inplace:
+                    y[..., 0:2] = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * self.stride[i]# xy  self.stride[i]意思是尺度i输出的一格代表输入多少像素，因此输出的box就是绝对像素坐标
+                    # y[..., 2:4] = (y[..., 2:4] * 2) ** 2.6 * self.anchor_grid[i]  # wh
+                    y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                # z.append(y.view(bs, -1, self.no))
+                z.append(y)#y[bs,na,H,W,no=4+1+nc]
+
+        # return x if self.training else (torch.cat(z, 1), x)
+        return x if self.training else (z, x)#z[nl][bs,na,H,W,no=4+1+nc]
+
+Detect2#目标斜框方向输出层
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+            bs, _, ny, nx = x[i].shape  # x(bs,15,20,20) to x(bs,3,20,20,5)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+
+            if not self.training:  # inference
+                if self.onnx_dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                    self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+
+                y = x[i].sigmoid()
+                if self.inplace:
+                    y[..., 1:3] = y[..., 1:3] * 2 - 1   # theta
+                    # y[..., 3:5] = (y[..., 3:5] * 2) ** 2.6 * self.anchor_grid[i]  # ab
+                    y[..., 3:5] = (y[..., 3:5] * 2) ** 2 * self.anchor_grid[i]  # ab
+                # if self.inplace:
+                #     y = x[i]
+                #     y[..., 0] = y[..., 0].sigmoid()
+                #     y[..., 1:3] = y[..., 1:3].sigmoid() * 2 - 1   # theta
+                #     y[..., 3:5] = torch.exp(y[..., 3:5]) * self.anchor_grid[i]  # ab
+                else:
+                    raise Exception("Detect2 forward error")
+                # z.append(y.view(bs, -1, self.no))
+                z.append(y)#y[bs,na,H,W,no=1(p)+2(dir)+2(ab)]
+
+        # return x if self.training else (torch.cat(z, 1), x)
+        return x if self.training else (z, x)#z[nl][bs,na,H,W,no=1(p)+2(dir)+2(ab)]
+
+utils/general.py里面包含了
+#斜框
+def rot_nms(prediction, conf_thres=0.25, iou_thres=0.3, ab_thres=3.0, fold_angle=2, mask_dir=[]):
+#水平框
+def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, multi_label=False,
+                        labels=(), max_det=300):
+注意这里绝不仅仅是nms，而是包含了yolo后处理过滤目标的全部过程
+
+rot_nms里面调用了
+torchvision.ops.nms函数调用的box参数是[xmin, ymin, xmax, ymax]格式，而yolo里面通常是[x,y,w,h]格式，
+因此需要调用xywh2xyxy(boxes)转换成[xmin, ymin, xmax, ymax]
+如：id_nms = torchvision.ops.nms(xywh2xyxy(boxes), scores, iou_thres)
+
+推理方法调用和shape
+#out,train_out = detect(model, training, im,augment,conf_thres, iou_thres, ab_thres, fold_angle=fold, mask_dir=data['mask_dir'])
+def detect(model, training, im,augment,conf_thres, iou_thres, ab_thres, fold_angle,mask_dir=[],threshs=torch.zeros(0),dt=[]):
+    # inference
+    if dt!=[]:
+        # inference
+        t2 = time_sync()
+        if training:
+            out,train_out = [],[]
+            tmp = model(im, augment=augment)
+            for t in tmp:
+                out.append(t[0])
+                train_out.extend(t[1])
+        else:
+            out, train_out = model(im, augment=augment, val=True)
+        t3 = time_sync()
+        dt[1] += t3 - t2#dt[1]推理时间
+
+        # NMS  pts[4*2]部分全部变成绝对坐标
+        #pred[2=Detect+Detect2][nl][b,a,H,W,Dectct(5+c) or Detect2(5=1+2(dir)+2(ab))]
+        out = rot_nms(out, conf_thres, iou_thres, ab_thres, fold_angle, mask_dir,threshs)
+        #out[b][nt,10=2*4+1(conf)+1(cls)]
+        dt[2] += time_sync() - t3#dt[2]后处理时间
+        
+        return out,train_out
+    else:
+        pred = model(im, augment=0, val=True)[0]
+        #pred[2=Detect+Detect2][nl][b,a,H,W,Dectct(4(box)+1(conf)+nc) or Detect2(5=1(p)+2(dir)+2(ab))]
+        pred = rot_nms(pred, conf_thres, iou_thres, ab_thres=ab_thres, fold_angle=fold_angle, mask_dir=mask_dir,threshs=threshs)
+        #pred[b][nt,10=4(pts)*2+1(conf)+1(cls)]
+        return pred
+
+
+5.models/yolov5l-guge.yaml
+models/common.py模块是模型基础层模块
+定义了模型块结构，其中每一行其实相当于很多卷积层的组合，算是一个层编号

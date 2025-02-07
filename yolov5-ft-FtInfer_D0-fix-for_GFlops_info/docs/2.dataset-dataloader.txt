@@ -1,0 +1,188 @@
+############################################################################################
+2.dataset-dataloader
+更换数据库重点配置cfg,data,imgsz三个选项
+    #GuGe
+    opt.cfg = 'models/yolov5l-guge.yaml'#
+    opt.data = 'data/Guge.yaml'#切记里面的数据集路径存在可用！
+    opt.imgsz = 768
+    #Dota1.5
+    opt.cfg = 'models/yolov5l-dota.yaml'#
+    opt.data = 'data/dota.yaml'#切记里面的数据集路径存在可用！
+    opt.imgsz = 896
+文件data/Guge.yaml指明了训练数据集的位置
+path: /home/liu/data/home/liu/workspace/darknet/datas/GuGe
+train: images
+val: val/images
+train和val是相当于path的images路径里面直接存放了训练图像集和验证图像集
+
+训练参数在train函数里面通过路径字符串hyp='data/hyps/hyp.scratch.yaml'作为文件名转换成字典hyp得到，代码如下
+# Hyperparameters
+    if isinstance(hyp, str):
+        with open(hyp, errors='ignore') as f:
+            hyp = yaml.safe_load(f)  # load hyps dict
+其中数据增广随机概率augment=0.6可以在这里设定
+同时把hyp里面的内容备份到run/exp/opt.yaml里面，便于后期resume加载
+# Save run settings
+    with open(save_dir / 'hyp.yaml', 'w') as f:
+        yaml.safe_dump(hyp, f, sort_keys=False)
+    with open(save_dir / 'opt.yaml', 'w') as f:
+        yaml.safe_dump(vars(opt), f, sort_keys=False)
+    data_dict = None
+
+
+数据集的配置文件在train.py里面的train()函数
+# Config
+    plots = not evolve  # create plots
+    cuda = device.type != 'cpu'
+    init_seeds(1 + RANK)
+    with torch_distributed_zero_first(LOCAL_RANK):#这里验证训练路径和验证集路径是否存在！
+        data_dict = data_dict or check_dataset(data)  # check if None
+    train_path, val_path = data_dict['train'], data_dict['val']
+    nc = 1 if single_cls else int(data_dict['nc'])  # number of classes
+    names = ['item'] if single_cls and len(data_dict['names']) != 1 else data_dict['names']  # class names
+    mask_dir = data_dict['mask_dir']
+    assert len(names) == nc, f'{len(names)} names found for nc={nc} dataset in {data}'  # check
+    is_coco = isinstance(val_path, str) and val_path.endswith('coco/val2017.txt')  # COCO dataset
+
+    with torch_distributed_zero_first(LOCAL_RANK):#data = 'data/Guge.yaml'指定数据集配置文件
+        data_dict = data_dict or check_dataset(data)  # check if None
+
+#注意，dataloader有个回调函数collate_fn，里面第一行zip将会调用LoadImagesAndLabels::__getitem__(self, index)
+def create_dataloader(path, imgsz, batch_size, stride, single_cls=False, hyp=None, augment=False, cache=False, pad=0.0,
+                      rect=False, rank=-1, workers=8, image_weights=False, quad=False, prefix='', shuffle=True):
+里面调用
+ dataloader = loader(dataset,
+                        batch_size=batch_size,
+                        shuffle=shuffle and sampler is None,
+                        num_workers=nw,
+                        sampler=sampler,
+                        pin_memory=True,
+                        collate_fn=LoadImagesAndLabels.collate_fn4 if quad else LoadImagesAndLabels.collate_fn)
+指定了回调函数collate_fn
+
+注意dataset.labels[nimages][nt,1(cls)+4(box)+4(pts)*2]，这个维度不变，
+#只是在训练循环中生成batch时得到临时数据labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+def collate_fn(batch):#这里之前会调用batchsize次LoadImagesAndLabels::__getitem__(self, index)形成batch集合
+        img, label, path, shapes = zip(*batch)
+        #img[batch][C,H,W], label[batch][nt,1(b)+13=(1(cls)+4(box)+4(pts)*2)], path[batch], shapes(h0, w0), ((h / h0, w / w0), pad)
+        #与__getitem__里面的return torch.from_numpy(img), labels_out, self.img_files[index], shapes对应
+        for i, l in enumerate(label):
+            l[:, 0] = i  #第0列填入batch
+            #LoadImagesAndLabels::__getitem__里执行了labels_out[:, 1:] = torch.from_numpy(labels)
+            #labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+        return torch.stack(img, 0), torch.cat(label, 0), path, shapes
+
+函数LoadImagesAndLabels::__getitem__(self, index)#末尾返回内容和collate_fn对应
+        labels_out = torch.zeros((nl, 14))#labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+        if nl:
+            labels_out[:, 1:] = torch.from_numpy(labels)#labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+            #注意第0列空出来，在collate_fn里面填入batch
+        #labels_out[nt,1(b)+13=(1(cls)+4(box)+4(pts)*2)]
+
+        # Convert
+        img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        img = np.ascontiguousarray(img)
+
+        return torch.from_numpy(img), labels_out, self.img_files[index], shapes
+        #与collate_fn里面的img, label, path, shapes = zip(*batch)对应
+
+
+-->数据增广
+labels = self.labels[index].copy()
+            if labels.size:  # normalized xywh to pixel xyxy format
+                labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
+                #先把xywh(中心点坐标+宽高)-->xyxy(左上角坐标+右下角坐标)
+
+            if self.augment and random.random() < hyp['augment']:#hyp['augment']是数据增广概率
+                # img, labels = random_perspective(img, labels,
+                #                                  degrees=hyp.get('degrees',0),
+                #                                  translate=hyp.get('translate',0),
+                #                                  scale=hyp.get('scale',1.0),
+                #                                  shear=hyp.get('shear',0),
+                #                                  perspective=hyp['perspective'])
+                # img, labels = augment_poly(img, labels)
+                img, labels = self.augmentation.augment(img, labels)
+                #意思是把原始的img, labels经过增广转换成img, labels
+
+        nl = len(labels)  # number of labels
+        if nl:
+            # labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
+            labels[:, 1:] = xyxy2xywhn(labels[:, 1:], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
+            #还原xyxy(左上角坐标+右下角坐标)-->xywh(中心点坐标+宽高)
+
+img, labels = self.augmentation.augment(img, labels)
+里面：
+
+
+-->
+utils/dataset.py里面
+LoadImagesAndLabels里面初始化时调用了cache_labels函数
+cache_path = (p if p.is_file() else Path(self.label_files[0]).parent).with_suffix('.cache')
+        try:
+            cache, exists = np.load(cache_path, allow_pickle=True).item(), True  # load dict
+            assert cache['version'] == self.cache_version  # same version
+            assert cache['hash'] == get_hash(self.label_files + self.img_files)  # same hash
+        except:
+            cache, exists = self.cache_labels(cache_path, prefix), False  # cache
+把文件夹数据全部读入cache字典里面cache[]
+#cache[n_images]形成的字典，里面每项3个内容：cache[n_images][0]是该图像标签[nt,5+8]  [1]是[640,640]该图像大小  [2]=[]
+
+而cache_labels函数通过Pool对象回调调用verify_image_label函数对文件夹里面的labels数据进行初始加载
+def cache_labels(self, path=Path('./labels.cache'), prefix=''):
+        # Cache dataset labels, check images and read shapes
+        x = {}  # dict
+        nm, nf, ne, nc, msgs = 0, 0, 0, 0, []  # number missing, found, empty, corrupt, messages
+        desc = f"{prefix}Scanning '{path.parent / path.stem}' images and labels..."
+        with Pool(NUM_THREADS) as pool:
+            pbar = tqdm(
+                pool.imap(verify_image_label, zip(self.img_files, self.label_files, self.pts_files, repeat(prefix))),
+                desc=desc, total=len(self.img_files))
+                #本质上是线程调用函数：verify_image_label(self.img_files, self.label_files, self.pts_files, repeat(prefix))
+
+
+def verify_image_label(args):#cache_labels函数通过Pool对象回调调用verify_image_label函数
+    # Verify one image-label pair
+    im_file, lb_file, pts_file, prefix = args
+    nm, nf, ne, nc, msg, segments = 0, 0, 0, 0, '', []  # number (missing, found, empty, corrupt), message, segments
+    #nm, nf, ne, nc是一些统计数据，没啥卵用
+    try:
+        ..........
+        # verify labels
+        if os.path.isfile(lb_file):
+            nf = 1  # label found
+            #读取txt标签文件存储到 l[nt,5=1+4]
+            with open(lb_file) as f: # .txt
+                l = [x.split() for x in f.read().strip().splitlines() if len(x)]#读取yolo里一行一个目标的标签数据[nt][c x y w h]
+                read_l = len(l)
+                l = np.array(l, dtype=np.float32)#l[nt][5=1+4]->l[nt,5=1+4]
+                assert(l.shape[0]==read_l)
+               
+            #add 读取新增pts文件中的数据...
+            with open(pts_file) as f: #.pts
+                p = [x.split() for x in f.read().strip().splitlines() if len(x)]
+                #p = [['0','0','0','0','0','0','0','0'] for x in p if x==['-']]]
+                for i in range(len(p)):
+                    if p[i]==['-']:
+                        xc,yc,w,h = float(l[i][1]),float(l[i][2]),float(l[i][3]),float(l[i][4])
+                        #p[i] = [str(round(xc-w/2,6)),'0','0','0','0','0','0','0']
+                        p[i] = [str(round(xc-w/2,6)),str(round(yc-h/2,6)),
+                                str(round(xc+w/2,6)),str(round(yc-h/2,6)),
+                                str(round(xc+w/2,6)),str(round(yc+h/2,6)),
+                                str(round(xc-w/2,6)),str(round(yc+h/2,6))]
+                        #由于后面p = np.array(p, dtype=np.float32)要求字符串必须是数值的，'-'转数据矩阵会报错
+                        #也就是水平框的四个顶点构建四边形
+                p = np.array(p, dtype=np.float32)#list转np矩阵[nt,4*2=8]
+                assert(p.shape[0]==l.shape[0])#pts的行数即目标数  和  lables里的行数目标数应该一致
+                
+            nl = len(l)
+            if nl:#l[1+4(xywh)]就是原始yolo标签txt数据的一行，一个目标的位置信息
+                clss = l[:, 0].reshape(-1, 1)#[nt,1]，l[:, 0]的shape是l[:],reshape后变成l[nt,1]
+                boxs = np.clip(l[:, 1:], 0, 1)#[nt,4] ,np.clip的意思是设定上下限,目标框的坐标和wh都限制在0,1范围内
+                l = np.concatenate((clss, boxs), axis=1)#l从list转换成np矩阵[nt,1+4=5]
+                #add 把新增数据拼接到目标标签l[:,1+4]后面...
+                p = np.clip(p, 0, 1)#p[:,8]是新增的
+                l = np.concatenate((l, p), axis=1)#把pts数据p拼到原始yolo标签l后面:l[nt,5] cat p[nt,4*2=8]-->p[nt,5 + 4*2=8]
+                assert l.shape[1] == 13, f'labels require 5+8=13 columns, {l.shape[1]} columns detected'
+                assert (l >= 0).all(), f'negative label values {l[l < 0]}'
+                assert (l[:, 1:] <= 1).all(), f'non-normalized or out of bounds coordinates {l[:, 1:][l[:, 1:] > 1]}'
+                l = np.unique(l, axis=0)  # remove duplicate rows,  同一目标重复标注，合并

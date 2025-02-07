@@ -1,0 +1,15 @@
+
+path: /media/liu/a2254a68-9f90-4b44-ab2a-ffc55b3612381/datas/voc_segment
+train: images 
+val: val/images  
+
+
+# Classes
+nc: 20  # number of classes
+names: ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
+        'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
+# class names
+
+ft_coef: 7
+val_epoch: 20
+

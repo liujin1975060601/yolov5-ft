@@ -1,0 +1,615 @@
+0.基本操作
+一开始设置opt.resume = True，注意只跑一次，否则每次跑都会在run/train/里面新建一个exp文件夹
+
+0.基本常识
+-->tensor和array之间相互转换，两种数组不能混杂运算，必须统一
+tensor转array
+a_tensor.numpy()
+array转tensor
+torch.from_numpy(a_array)
+-->了解多维数组的几种基本操作
+过滤a[a>3]
+检索a[b[n],c[n],d[n]]-->a[n]
+赋值a[b[n],c[n]]=1
+
+nonzero的两种用法
+nonzero地址检索
+cls_idx = torch.nonzero(cls_mask).squeeze(1)
+            if(cls_idx.shape[0]>0):
+                if(mask_dir!=[] and mask_dir[clss]>0):
+                    pcls = pRot[cls_idx, :9]#pcls[nt_filt,9]
+nonzero for循环
+sim_vec = torch.nonzero(anchor_data[..., 4] > conf_thres)
+                #sim_vec[nt,2] #取得所有非零元素True的坐标集合
+                if len(sim_vec) > 0:
+                    for x, y in sim_vec:
+                        targets.append(anchor_data[x][y])#[nt][5+c]
+                        tinfo.append([i, batch_idx, anchor_idx, x, y])#[nt][i, batch_idx, anchor_idx, x, y]
+
+按pi_dir[..., 0]的shape创建一个填0数组 tpab = torch.zeros_like(pi_dir[..., 0], device=device)
+重复循环数组a.repeat(n)
+a[:,1:]数组切片基本知识
+
+
+1.Train Frame work
+train.py
+
+调用主流程是
+->opt = parse_opt() .. main()
+-->train()
+
+加载模型
+pretrained = weights.endswith('.pt')
+    if pretrained:
+        with torch_distributed_zero_first(LOCAL_RANK):
+            weights = attempt_download(weights)  # download if not found locally
+        ckpt = torch.load(weights, map_location=device)  # load checkpoint
+        model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)
+训练配置
+def parse_opt(known=False):
+    ....
+    opt.weights = 'weights/yolov5l.pt'
+    opt.cfg = 'models/yolov5l-guge.yaml'
+    opt.data = 'data/Guge.yaml'
+    # opt.noval = False
+    opt.batch_size = 8
+    opt.epochs = 100
+    opt.imgsz = 768
+    opt.resume = True #True
+    # opt.noautoanchor = True
+    # # opt.single_cls = True
+    # opt.hyp = 'data/hyps/hyp.ucas.yaml'
+    opt.fold = 2
+    return opt
+
+
+
+
+############################################################################################
+2.dataset-dataloader
+更换数据库重点配置cfg,data,imgsz三个选项
+    #GuGe
+    opt.cfg = 'models/yolov5l-guge.yaml'#
+    opt.data = 'data/Guge.yaml'#切记里面的数据集路径存在可用！
+    opt.imgsz = 768
+    #Dota1.5
+    opt.cfg = 'models/yolov5l-dota.yaml'#
+    opt.data = 'data/dota.yaml'#切记里面的数据集路径存在可用！
+    opt.imgsz = 896
+文件data/Guge.yaml指明了训练数据集的位置
+path: /home/liu/data/home/liu/workspace/darknet/datas/GuGe
+train: images
+val: val/images
+train和val是相当于path的images路径里面直接存放了训练图像集和验证图像集
+
+训练参数在train函数里面通过路径字符串hyp='data/hyps/hyp.scratch.yaml'作为文件名转换成字典hyp得到，代码如下
+# Hyperparameters
+    if isinstance(hyp, str):
+        with open(hyp, errors='ignore') as f:
+            hyp = yaml.safe_load(f)  # load hyps dict
+其中数据增广随机概率augment=0.6可以在这里设定
+同时把hyp里面的内容备份到run/exp/opt.yaml里面，便于后期resume加载
+# Save run settings
+    with open(save_dir / 'hyp.yaml', 'w') as f:
+        yaml.safe_dump(hyp, f, sort_keys=False)
+    with open(save_dir / 'opt.yaml', 'w') as f:
+        yaml.safe_dump(vars(opt), f, sort_keys=False)
+    data_dict = None
+
+
+数据集的配置文件在train.py里面的
+# Config
+    plots = not evolve  # create plots
+    cuda = device.type != 'cpu'
+    init_seeds(1 + RANK)
+    with torch_distributed_zero_first(LOCAL_RANK):
+        data_dict = data_dict or check_dataset(data)  # check if None
+    train_path, val_path = data_dict['train'], data_dict['val']
+    nc = 1 if single_cls else int(data_dict['nc'])  # number of classes
+    names = ['item'] if single_cls and len(data_dict['names']) != 1 else data_dict['names']  # class names
+    mask_dir = data_dict['mask_dir']
+    assert len(names) == nc, f'{len(names)} names found for nc={nc} dataset in {data}'  # check
+    is_coco = isinstance(val_path, str) and val_path.endswith('coco/val2017.txt')  # COCO dataset
+
+    with torch_distributed_zero_first(LOCAL_RANK):#data = 'data/Guge.yaml'指定数据集配置文件
+        data_dict = data_dict or check_dataset(data)  # check if None
+
+#注意，dataloader有个回调函数collate_fn，里面第一行zip将会调用LoadImagesAndLabels::__getitem__(self, index)
+def create_dataloader(path, imgsz, batch_size, stride, single_cls=False, hyp=None, augment=False, cache=False, pad=0.0,
+                      rect=False, rank=-1, workers=8, image_weights=False, quad=False, prefix='', shuffle=True):
+里面调用
+ dataloader = loader(dataset,
+                        batch_size=batch_size,
+                        shuffle=shuffle and sampler is None,
+                        num_workers=nw,
+                        sampler=sampler,
+                        pin_memory=True,
+                        collate_fn=LoadImagesAndLabels.collate_fn4 if quad else LoadImagesAndLabels.collate_fn)
+指定了回调函数collate_fn
+
+注意dataset.labels[nimages][nt,1(cls)+4(box)+4(pts)*2]，这个维度不变，
+#只是在训练循环中生成batch时得到临时数据labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+def collate_fn(batch):#这里之前会调用batchsize次LoadImagesAndLabels::__getitem__(self, index)形成batch集合
+        img, label, path, shapes = zip(*batch)
+        #img[batch][C,H,W], label[batch][nt,1(b)+13=(1(cls)+4(box)+4(pts)*2)], path[batch], shapes(h0, w0), ((h / h0, w / w0), pad)
+        #与__getitem__里面的return torch.from_numpy(img), labels_out, self.img_files[index], shapes对应
+        for i, l in enumerate(label):
+            l[:, 0] = i  #第0列填入batch
+            #LoadImagesAndLabels::__getitem__里执行了labels_out[:, 1:] = torch.from_numpy(labels)
+            #labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+        return torch.stack(img, 0), torch.cat(label, 0), path, shapes
+
+函数LoadImagesAndLabels::__getitem__(self, index)#末尾返回内容和collate_fn对应
+        labels_out = torch.zeros((nl, 14))#labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+        if nl:
+            labels_out[:, 1:] = torch.from_numpy(labels)#labels_out[1(batch)+1(cls)+4(box)+4*2(pts)]
+            #注意第0列空出来，在collate_fn里面填入batch
+        #labels_out[nt,1(b)+13=(1(cls)+4(box)+4(pts)*2)]
+
+        # Convert
+        img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        img = np.ascontiguousarray(img)
+
+        return torch.from_numpy(img), labels_out, self.img_files[index], shapes
+        #与collate_fn里面的img, label, path, shapes = zip(*batch)对应
+
+
+-->数据增广
+labels = self.labels[index].copy()
+            if labels.size:  # normalized xywh to pixel xyxy format
+                labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
+                #先把xywh(中心点坐标+宽高)-->xyxy(左上角坐标+右下角坐标)
+
+            if self.augment and random.random() < hyp['augment']:#hyp['augment']是数据增广概率
+                # img, labels = random_perspective(img, labels,
+                #                                  degrees=hyp.get('degrees',0),
+                #                                  translate=hyp.get('translate',0),
+                #                                  scale=hyp.get('scale',1.0),
+                #                                  shear=hyp.get('shear',0),
+                #                                  perspective=hyp['perspective'])
+                # img, labels = augment_poly(img, labels)
+                img, labels = self.augmentation.augment(img, labels)
+                #意思是把原始的img, labels经过增广转换成img, labels
+
+        nl = len(labels)  # number of labels
+        if nl:
+            # labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
+            labels[:, 1:] = xyxy2xywhn(labels[:, 1:], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
+            #还原xyxy(左上角坐标+右下角坐标)-->xywh(中心点坐标+宽高)
+
+img, labels = self.augmentation.augment(img, labels)
+里面：
+
+
+-->
+utils/dataset.py里面
+LoadImagesAndLabels里面初始化时调用了cache_labels函数
+cache_path = (p if p.is_file() else Path(self.label_files[0]).parent).with_suffix('.cache')
+        try:
+            cache, exists = np.load(cache_path, allow_pickle=True).item(), True  # load dict
+            assert cache['version'] == self.cache_version  # same version
+            assert cache['hash'] == get_hash(self.label_files + self.img_files)  # same hash
+        except:
+            cache, exists = self.cache_labels(cache_path, prefix), False  # cache
+把文件夹数据全部读入cache字典里面cache[]
+#cache[n_images]形成的字典，里面每项3个内容：cache[n_images][0]是该图像标签[nt,5+8]  [1]是[640,640]该图像大小  [2]=[]
+
+而cache_labels函数通过Pool对象回调调用verify_image_label函数对文件夹里面的labels数据进行初始加载
+def cache_labels(self, path=Path('./labels.cache'), prefix=''):
+        # Cache dataset labels, check images and read shapes
+        x = {}  # dict
+        nm, nf, ne, nc, msgs = 0, 0, 0, 0, []  # number missing, found, empty, corrupt, messages
+        desc = f"{prefix}Scanning '{path.parent / path.stem}' images and labels..."
+        with Pool(NUM_THREADS) as pool:
+            pbar = tqdm(
+                pool.imap(verify_image_label, zip(self.img_files, self.label_files, self.pts_files, repeat(prefix))),
+                desc=desc, total=len(self.img_files))
+                #本质上是线程调用函数：verify_image_label(self.img_files, self.label_files, self.pts_files, repeat(prefix))
+
+
+def verify_image_label(args):#cache_labels函数通过Pool对象回调调用verify_image_label函数
+    # Verify one image-label pair
+    im_file, lb_file, pts_file, prefix = args
+    nm, nf, ne, nc, msg, segments = 0, 0, 0, 0, '', []  # number (missing, found, empty, corrupt), message, segments
+    #nm, nf, ne, nc是一些统计数据，没啥卵用
+    try:
+        ..........
+        # verify labels
+        if os.path.isfile(lb_file):
+            nf = 1  # label found
+            #读取txt标签文件存储到 l[nt,5=1+4]
+            with open(lb_file) as f: # .txt
+                l = [x.split() for x in f.read().strip().splitlines() if len(x)]#读取yolo里一行一个目标的标签数据[nt][c x y w h]
+                read_l = len(l)
+                l = np.array(l, dtype=np.float32)#l[nt][5=1+4]->l[nt,5=1+4]
+                assert(l.shape[0]==read_l)
+               
+            #add 读取新增pts文件中的数据...
+            with open(pts_file) as f: #.pts
+                p = [x.split() for x in f.read().strip().splitlines() if len(x)]
+                #p = [['0','0','0','0','0','0','0','0'] for x in p if x==['-']]]
+                for i in range(len(p)):
+                    if p[i]==['-']:
+                        xc,yc,w,h = float(l[i][1]),float(l[i][2]),float(l[i][3]),float(l[i][4])
+                        #p[i] = [str(round(xc-w/2,6)),'0','0','0','0','0','0','0']
+                        p[i] = [str(round(xc-w/2,6)),str(round(yc-h/2,6)),
+                                str(round(xc+w/2,6)),str(round(yc-h/2,6)),
+                                str(round(xc+w/2,6)),str(round(yc+h/2,6)),
+                                str(round(xc-w/2,6)),str(round(yc+h/2,6))]
+                        #由于后面p = np.array(p, dtype=np.float32)要求字符串必须是数值的，'-'转数据矩阵会报错
+                        #也就是水平框的四个顶点构建四边形
+                p = np.array(p, dtype=np.float32)#list转np矩阵[nt,4*2=8]
+                assert(p.shape[0]==l.shape[0])#pts的行数即目标数  和  lables里的行数目标数应该一致
+                
+            nl = len(l)
+            if nl:#l[1+4(xywh)]就是原始yolo标签txt数据的一行，一个目标的位置信息
+                clss = l[:, 0].reshape(-1, 1)#[nt,1]，l[:, 0]的shape是l[:],reshape后变成l[nt,1]
+                boxs = np.clip(l[:, 1:], 0, 1)#[nt,4] ,np.clip的意思是设定上下限,目标框的坐标和wh都限制在0,1范围内
+                l = np.concatenate((clss, boxs), axis=1)#l从list转换成np矩阵[nt,1+4=5]
+                #add 把新增数据拼接到目标标签l[:,1+4]后面...
+                p = np.clip(p, 0, 1)#p[:,8]是新增的
+                l = np.concatenate((l, p), axis=1)#把pts数据p拼到原始yolo标签l后面:l[nt,5] cat p[nt,4*2=8]-->p[nt,5 + 4*2=8]
+                assert l.shape[1] == 13, f'labels require 5+8=13 columns, {l.shape[1]} columns detected'
+                assert (l >= 0).all(), f'negative label values {l[l < 0]}'
+                assert (l[:, 1:] <= 1).all(), f'non-normalized or out of bounds coordinates {l[:, 1:][l[:, 1:] > 1]}'
+                l = np.unique(l, axis=0)  # remove duplicate rows,  同一目标重复标注，合并
+
+
+
+
+
+loss部分#####################################################
+3.loss
+大部分内容都在
+utils/loss.py
+里面
+调用ComputeLoss::里面的__call__
+里面
+tcls, tbox, indices, anchors, tdir, tab, anchorsab = self.build_targets_dir(pH, pD, targets, dir_targets)  # targets
+        #tcls[nl][nt]
+        #tbox[nl][nt,4]
+        #indices[nl][5(b, a, gj, gi, aab)][nt]
+        #anchors[nl][nt,2]
+        #tdir[nl][nt,2]
+        #tab[nl][nt,2]
+        #anchorsab[nl][nt,2]
+是把标注数据集dir_targets转换成一个个切片独立的tensor，以gt目标为单位，得到每个gt目标对应的anchors等用于计算loss的tensor
+注意tensor的各种过滤语法糖写法，和多维检索语法糖写法
+
+loss里面这段代码的理解：
+# Objectness
+                score_iou = iou.detach().clamp(0).type(tobj.dtype)
+                #score_iou[nt]
+                if self.sort_obj_iou:
+                    sort_id = torch.argsort(score_iou)
+                    b, a, gj, gi, score_iou = b[sort_id], a[sort_id], gj[sort_id], gi[sort_id], score_iou[sort_id]
+                tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * score_iou  # iou ratio
+它是按从小到大顺序排序的，这样后面赋值的语句会覆盖前面的语句，也就是大的iou会覆盖小iou
+一般情况下一个目标涉及多个不同的网格anchors，也就是不会重复，这种排序就没啥用。
+但也有重复的情况，同样的anchor重复赋值，就以iou最大的值为准（放在最后刷新）
+
+
+
+
+
+#模型部分#####################################################
+Detect模块是输出模块
+__init__()构造函数里，又经过了一个卷积层确保了输出通道数是na(5+nc)，所以不用在模型定义里面显式定义通道数和nc符合
+self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)
+
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])#注意这里经过了self.m卷积函数之后，模型的输出通道数量与na(5+nc)符合了！
+
+models/common.py模块是模型基础层模块
+其中C3的一个变种C3TR是Transformer模块，里面包含BLOCK和Layer
+重点关注
+models/yolo.py模块是yolov层级联管理模块
+def parse_model(d, ch):  # model_dict, input_channels(3) 解析yaml格式的模型文件结构
+    LOGGER.info(f"\n{'':>3}{'from':>18}{'n':>3}{'params':>10}  {'module':<40}{'arguments':<30}")
+    anchors, nc, gd, gw = d['anchors'], d['nc'], d['depth_multiple'], d['width_multiple']
+    anchorsab = d['anchorsab']
+    na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
+    no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
+    ## add
+    save2 = set()
+    ##
+    layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
+    for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):#（f, n, m, args)对应yaml文件里面的from, number, module, args
+        m = eval(m) if isinstance(m, str) else m  # eval strings,作为嵌套执行的python字符串命令，这里返回一个commom定义模型类
+        for j, a in enumerate(args):
+            try:
+                args[j] = eval(a) if isinstance(a, str) else a  # eval strings
+            except NameError:
+                pass
+
+        n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
+        if m in [Conv, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, MixConv2d, Focus, CrossConv,
+                 BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, CBAM, CSPC, CSPCAM, CSPSAM]:
+
+class Model(nn.Module):
+里面的_forward_once函数是yolo级联模型的一般通用调用方法,包含了尾层Detect和Detect2
+    def forward(self, x, augment=False, profile=False, visualize=False):
+        if augment:
+            return self._forward_augment(x)  # augmented inference, None
+        return self._forward_once(x, profile, visualize)  # single-scale inference, train
+
+    def _forward_once(self, x, profile=False, visualize=False):
+        y, dt = [], []  # outputs
+        # add
+        out = []
+        for m in self.model:
+            if m.f != -1:  # if not from previous layer
+                x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
+            if profile:
+                self._profile_one_layer(m, x, dt)
+            x = m(x)  # run
+            y.append(x if m.i in self.save else None)  # save output
+            # y.append(x)  # save output
+            # y.append(x)
+            if visualize:
+                feature_visualization(x, m.type, m.i, save_dir=visualize)
+            # add
+            if type(m) in [Detect, Detect2]:
+                if not self.training:
+                    out.append(x)
+                else:
+                    out.extend(x)
+                # out.append(x)
+        # feat = y[18]
+        # show_heatmap(feat.cpu().detach().numpy()[0])
+        # 输出热图时候同时输出y
+        # return out, y
+        return out
+还包含输出层集成模块Detect用于水平框集成输出,Detect2用于斜框集成输出
+Detect
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+
+            if not self.training:  # inference
+                if self.onnx_dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                    self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+
+                y = x[i].sigmoid()
+                if self.inplace:
+                    y[..., 0:2] = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                    # y[..., 2:4] = (y[..., 2:4] * 2) ** 2.6 * self.anchor_grid[i]  # wh
+                    y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                else:  # for YOLOv5 on AWS Inferentia https://github.com/ultralytics/yolov5/pull/2953
+                    xy = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                    wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                    y = torch.cat((xy, wh, y[..., 4:]), -1)
+                # z.append(y.view(bs, -1, self.no))
+                z.append(y)#y[bs,na,H,W,no=4+1+nc]
+
+        # return x if self.training else (torch.cat(z, 1), x)
+        return x if self.training else (z, x)#z[nl][bs,na,H,W,no=4+1+nc]
+
+Detect2#目标斜框方向输出层
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+            bs, _, ny, nx = x[i].shape  # x(bs,15,20,20) to x(bs,3,20,20,5)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+
+            if not self.training:  # inference
+                if self.onnx_dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                    self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+
+                y = x[i].sigmoid()
+                if self.inplace:
+                    y[..., 1:3] = y[..., 1:3] * 2 - 1   # theta
+                    # y[..., 3:5] = (y[..., 3:5] * 2) ** 2.6 * self.anchor_grid[i]  # ab
+                    y[..., 3:5] = (y[..., 3:5] * 2) ** 2 * self.anchor_grid[i]  # ab
+                # if self.inplace:
+                #     y = x[i]
+                #     y[..., 0] = y[..., 0].sigmoid()
+                #     y[..., 1:3] = y[..., 1:3].sigmoid() * 2 - 1   # theta
+                #     y[..., 3:5] = torch.exp(y[..., 3:5]) * self.anchor_grid[i]  # ab
+                else:
+                    raise Exception("Detect2 forward error")
+                # z.append(y.view(bs, -1, self.no))
+                z.append(y)#y[bs,na,H,W,no=1(p)+2(dir)+2(ab)]
+
+        # return x if self.training else (torch.cat(z, 1), x)
+        return x if self.training else (z, x)#z[nl][bs,na,H,W,no=1(p)+2(dir)+2(ab)]
+
+utils/general.py里面包含了
+#斜框
+def rot_nms(prediction, conf_thres=0.25, iou_thres=0.3, ab_thres=3.0, fold_angle=2, mask_dir=[]):
+#水平框
+def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, multi_label=False,
+                        labels=(), max_det=300):
+注意这里绝不仅仅是nms，而是包含了yolo后处理过滤目标的全部过程
+
+rot_nms里面调用了
+torchvision.ops.nms函数调用的box参数是[xmin, ymin, xmax, ymax]格式，而yolo里面通常是[x,y,w,h]格式，
+因此需要调用xywh2xyxy(boxes)转换成[xmin, ymin, xmax, ymax]
+如：id_nms = torchvision.ops.nms(xywh2xyxy(boxes), scores, iou_thres)
+
+推理方法调用和shape
+#out,train_out = detect(model, training, im,augment,conf_thres, iou_thres, ab_thres, fold_angle=fold, mask_dir=data['mask_dir'])
+def detect(model, training, im,augment,conf_thres, iou_thres, ab_thres, fold_angle,mask_dir=[],threshs=torch.zeros(0),dt=[]):
+    # inference
+    if dt!=[]:
+        # inference
+        t2 = time_sync()
+        if training:
+            out,train_out = [],[]
+            tmp = model(im, augment=augment)
+            for t in tmp:
+                out.append(t[0])
+                train_out.extend(t[1])
+        else:
+            out, train_out = model(im, augment=augment, val=True)
+        t3 = time_sync()
+        dt[1] += t3 - t2#dt[1]推理时间
+
+        # NMS  pts[4*2]部分全部变成绝对坐标
+        #pred[2=Detect+Detect2][nl][b,a,H,W,Dectct(5+c) or Detect2(5=1+2(dir)+2(ab))]
+        out = rot_nms(out, conf_thres, iou_thres, ab_thres, fold_angle, mask_dir,threshs)
+        #out[b][nt,10=2*4+1(conf)+1(cls)]
+        dt[2] += time_sync() - t3#dt[2]后处理时间
+        
+        return out,train_out
+    else:
+        pred = model(im, augment=0, val=True)[0]
+        #pred[2=Detect+Detect2][nl][b,a,H,W,Dectct(4(box)+1(conf)+nc) or Detect2(5=1(p)+2(dir)+2(ab))]
+        pred = rot_nms(pred, conf_thres, iou_thres, ab_thres=ab_thres, fold_angle=fold_angle, mask_dir=mask_dir,threshs=threshs)
+        #pred[b][nt,10=4(pts)*2+1(conf)+1(cls)]
+        return pred
+
+
+5.models/yolov5l-guge.yaml
+models/common.py模块是模型基础层模块
+定义了模型块结构，其中每一行其实相当于很多卷积层的组合，算是一个层编号
+
+6.评估与准则
+val.py的主ran函数里面主张图像推理完成之后会得到预测框predn和真值标注框labelsn之间的匹配关系矩阵
+correct = process_batch_poly(predn, labelsn, iouv)
+#得到预测框pred对应的真值匹配bool矩阵correct[预测目标数量,iou阈值数量]
+再通过list容器stats搜集起来：
+#pred的8列是预测目标conf，9列是预测目标cls
+stats.append((correct.cpu(), pred[:, 8].cpu(), pred[:, 9].cpu(), tcls)) #(correct, conf, pcls, tcls)
+最后通过：
+p, r, ap, f1, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
+        ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
+        mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
+得到每类ap,ap50
+
+
+
+
+
+
+小高遗留下来的错误
+错误1
+utils/general.py里面
+def rot_nms(prediction, conf_thres=0.25, iou_thres=0.3, ab_thres=3.0, fold_angle=2, mask_dir=[]):
+这个函数末尾
+cls_idx = torch.nonzero(cls_mask).squeeze(1)
+得到不同类的索引到原始总的目标集索引才对，他没有索引，是相对于单个类索引，非常严重的错误
+我改成
+id_nms = cls_idx[id_nms] #注意上面id_nms是针对pcls的编号，需要还原到pYolo的编号，用了cls_idx=torch.nonzero进行原始编号的查询
+有提升
+
+错误2
+def check_anchors(dataset, model, thr=4.0, imgsz=640):
+函数里面：
+m = model.module.model[-2] if hasattr(model, 'module') else model.model[-2]  # Detect()层
+他原来写成-1了，原版是-1，但加了倾斜框要改成-2，-1是倾斜框层Detect2，-2才是原来水平框层Detect
+
+错误3. anchors应该在除以网格数之前，即在原始输入图像上的像素长度，比较stride调换位置
+较大的stride对应较大的anchor是正确的排列，但应该在在除以网格数之前排序，查看工程里面所有的check_anchor_order，都搞反了
+m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
+check_anchor_order(m)
+m.anchors /= m.stride.view(-1, 1, 1)
+
+错误4.self._initialize_biases(m)只针对Detect，在Detect2里面就错误了！斜框分支输出Detect2的偏移b按水平框给初值了! 
+models/yolo.py
+class Model(nn.Module):
+....
+# add
+        m = self.model[-1]# Detect2()斜框输出层
+        if isinstance(m, Detect2):
+            s = 256  # 2x min stride 试着用一个256x256小图像跑一遍得到stride，比如得到stride=[8，16，32]
+            m.inplace = self.inplace
+            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])[:3]  # forward
+            #[:3意思是前三个分支的输出][1,na*(no=1+2+2),H,W]   x.shape[-2]意思是输出阵列H的长度
+            #输出一格相当于原始图像中多少像素
+            check_anchor_order(m)
+            m.anchors /= m.stride.view(-1, 1, 1)
+            self.stride = m.stride
+            #self._initialize_biases(m) #这个只是针对水平框，斜框这么弄就错误了！针对水平框的1(obj)+nc输出做了特殊的bias初始化，造孽啊
+
+错误5.autoanchor.py里面model.model[-1]  # Detect()，应该把-1改成-2，
+因为后面新增了斜框输出最后一层-1是斜框Detect2()，原来的最后一层输出Detect()其实变成了倒数第2层[-1]
+def check_anchors(dataset, model, thr=4.0, imgsz=640):
+    # Check anchor fit to data, recompute if necessary
+    prefix = colorstr('autoanchor: ')
+    print(f'\n{prefix}Analyzing anchors... ', end='')
+    m = model.module.model[-1] if hasattr(model, 'module') else model.model[-1]  # Detect()
+    shapes = imgsz * dataset.shapes / dataset.shapes.max(1, keepdims=True)
+    scale = np.random.uniform(0.9, 1.1, size=(shapes.shape[0], 1))  # augment scale
+
+错误6.计算abloss的时候，后面已经乘了一个学习因子系数self.hyp['ab']  lab *= self.hyp['ab']#0.05
+    前面再乘0.01就重复了!
+    lab += 0.01 * self.MSELoss(a_b, tab[i])
+    改成
+    lab += self.MSELoss(a_b, tab[i])
+
+错误7.关于tpab的loss应该局限于目标区集合的dir_set子集，他原来搞成了整个dir输出[...,0]平面，学了很多无效的数据
+tpab[np.arange(nt_dir),aab[dir_set]] = 1.0
+lpab += self.BCEpab(ppdir, tpab)#tpab[nt_dir,na_dir]
+
+
+修改部分——
+1.ab loss从原来的MSELoss改成iouloss，且去掉了0.01系数
+loss.py
+                a_b = (pi_dirs[dir_set][:, 3:5].sigmoid() * 2) ** 2 * anchorsab[i][dir_set]
+                #a_b[nt,2]
+                # a_b =  torch.exp(pi_dirs[:, 3:5]) * anchorsab[i]
+                #->a_b_iou = ab_iou(a_b, tab[i])
+                #a_b_iou[nt]
+                #->lab += (1.0 - a_b_iou).mean()
+                tab[i] = tab[i][dir_set]
+                lab += 0.01 * self.MSELoss(a_b, tab[i])
+
+2.四边形外接矩形框换成椭圆区外接矩形框
+utils\dataaug_poly.py
+ W,H = dirab2WH(dir_targets)
+.............
+            for i in range(len(boxes_aug.polygons)):
+                after = boxes_aug.polygons[i]
+                npts = len(after.coords)
+                if npts == 4:
+                    clss.append(after.label)#标签类别
+                    cx,cy = after.xx.mean(),after.yy.mean()
+                    xmin, ymin = cx - W[i]/2, cy - H[i]/2 #np.min(after.xx), np.min(after.yy)#box左上角坐标
+                    xmax, ymax = cx + W[i]/2, cy + H[i]/2 #np.max(after.xx), np.max(after.yy)#box右下角坐标
+                    bbox.append([xmin, ymin, xmax, ymax])
+                    points.append(after.coords.reshape(-1))#4个点展开
+general.py
+def dirab2WH(dirab):
+    assert(dirab.shape[1]==4)
+    cos_t, sin_t, a,b = dirab[:,0],dirab[:,1],dirab[:,2],dirab[:,3]
+    acos,bsin = a*cos_t, b*sin_t
+    acos2,bsin2=acos*acos,bsin*bsin
+    asin,bcos = a*sin_t, b*cos_t
+    asin2,bcos2=asin*asin,bcos*bcos
+    return 2*torch.sqrt(acos2+bsin2), 2*torch.sqrt(asin2+bcos2)
+dataaug_poly.py
+ W,H = dirab2WH(dir_targets)
+
+3.tpab这里没有考虑iou
+tpab[b, aab, gj, gi] = 1.0
+lpab *= self.hyp['pab']#也可以把这里改小一点
+
+4.ldir这里可以考虑换成点积
+ldir += self.BCEdir(cos_sin, tdir[i])#dir_scale_objs
+opt.fold = 2  这里也要注意能否改成(1-点积)**2
+注意推理和训练loss对应上
+
+5.model/yolo.py
+顺序颠倒了一下，其实没必要，他就是要在内部颠倒anchor的顺序，按顺序排列
+            m.anchors /= m.stride.view(-1, 1, 1)
+            check_anchor_order(m)
+搜索整个工程，有好几处check_anchor_order都搞错了
+
+6.添加了自动计算anchors，函数check_anchors
+在train.py里面调用autoanchor里面的函数check_anchors
+
+7.pdir输出是否做单位化处理
+这一点还需进一步验证比对，注意训练和推理是否sigmond和norm要保持一致
+
+后期改进计划--2023.6.8
+1.objgt=0随机挑选
+2.obj限制上限
+3.out_of_image iou
+4.shift aug

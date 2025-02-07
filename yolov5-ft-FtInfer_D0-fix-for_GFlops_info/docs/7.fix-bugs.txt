@@ -1,0 +1,128 @@
+小高遗留下来的错误
+错误1
+utils/general.py里面
+def rot_nms(prediction, conf_thres=0.25, iou_thres=0.3, ab_thres=3.0, fold_angle=2, mask_dir=[]):
+这个函数末尾
+cls_idx = torch.nonzero(cls_mask).squeeze(1)
+得到不同类的索引到原始总的目标集索引才对，他没有索引，是相对于单个类索引，非常严重的错误
+我改成
+id_nms = cls_idx[id_nms] #注意上面id_nms是针对pcls的编号，需要还原到pYolo的编号，用了cls_idx=torch.nonzero进行原始编号的查询
+有提升
+
+错误2
+def check_anchors(dataset, model, thr=4.0, imgsz=640):
+函数里面：
+m = model.module.model[-2] if hasattr(model, 'module') else model.model[-2]  # Detect()层
+他原来写成-1了，原版是-1，但加了倾斜框要改成-2，-1是倾斜框层Detect2，-2才是原来水平框层Detect
+
+错误3. anchors应该在除以网格数之前，即在原始输入图像上的像素长度，比较stride调换位置
+较大的stride对应较大的anchor是正确的排列，但应该在在除以网格数之前排序，查看工程里面所有的check_anchor_order，都搞反了
+m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
+check_anchor_order(m)
+m.anchors /= m.stride.view(-1, 1, 1)
+
+错误4.self._initialize_biases(m)只针对Detect，在Detect2里面就错误了！斜框分支输出Detect2的偏移b按水平框给初值了! 
+models/yolo.py
+class Model(nn.Module):
+....
+# add
+        m = self.model[-1]# Detect2()斜框输出层
+        if isinstance(m, Detect2):
+            s = 256  # 2x min stride 试着用一个256x256小图像跑一遍得到stride，比如得到stride=[8，16，32]
+            m.inplace = self.inplace
+            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])[:3]  # forward
+            #[:3意思是前三个分支的输出][1,na*(no=1+2+2),H,W]   x.shape[-2]意思是输出阵列H的长度
+            #输出一格相当于原始图像中多少像素
+            check_anchor_order(m)
+            m.anchors /= m.stride.view(-1, 1, 1)
+            self.stride = m.stride
+            #self._initialize_biases(m) #这个只是针对水平框，斜框这么弄就错误了！针对水平框的1(obj)+nc输出做了特殊的bias初始化，造孽啊
+
+错误5.autoanchor.py里面model.model[-1]  # Detect()，应该把-1改成-2，
+因为后面新增了斜框输出最后一层-1是斜框Detect2()，原来的最后一层输出Detect()其实变成了倒数第2层[-1]
+def check_anchors(dataset, model, thr=4.0, imgsz=640):
+    # Check anchor fit to data, recompute if necessary
+    prefix = colorstr('autoanchor: ')
+    print(f'\n{prefix}Analyzing anchors... ', end='')
+    m = model.module.model[-1] if hasattr(model, 'module') else model.model[-1]  # Detect()
+    shapes = imgsz * dataset.shapes / dataset.shapes.max(1, keepdims=True)
+    scale = np.random.uniform(0.9, 1.1, size=(shapes.shape[0], 1))  # augment scale
+
+错误6.计算abloss的时候，后面已经乘了一个学习因子系数self.hyp['ab']  lab *= self.hyp['ab']#0.05
+    前面再乘0.01就重复了!
+    lab += 0.01 * self.MSELoss(a_b, tab[i])
+    改成
+    lab += self.MSELoss(a_b, tab[i])
+
+错误7.关于tpab的loss应该局限于目标区集合的dir_set子集，他原来搞成了整个dir输出[...,0]平面，学了很多无效的数据
+tpab[np.arange(nt_dir),aab[dir_set]] = 1.0
+lpab += self.BCEpab(ppdir, tpab)#tpab[nt_dir,na_dir]
+
+
+其他改进部分——
+1.ab loss从原来的MSELoss改成iouloss，且去掉了0.01系数
+loss.py
+                a_b = (pi_dirs[dir_set][:, 3:5].sigmoid() * 2) ** 2 * anchorsab[i][dir_set]
+                #a_b[nt,2]
+                # a_b =  torch.exp(pi_dirs[:, 3:5]) * anchorsab[i]
+                #->a_b_iou = ab_iou(a_b, tab[i])
+                #a_b_iou[nt]
+                #->lab += (1.0 - a_b_iou).mean()
+                tab[i] = tab[i][dir_set]
+                lab += 0.01 * self.MSELoss(a_b, tab[i])
+
+2.四边形外接矩形框换成椭圆区外接矩形框
+utils\dataaug_poly.py
+ W,H = dirab2WH(dir_targets)
+.............
+            for i in range(len(boxes_aug.polygons)):
+                after = boxes_aug.polygons[i]
+                npts = len(after.coords)
+                if npts == 4:
+                    clss.append(after.label)#标签类别
+                    cx,cy = after.xx.mean(),after.yy.mean()
+                    xmin, ymin = cx - W[i]/2, cy - H[i]/2 #np.min(after.xx), np.min(after.yy)#box左上角坐标
+                    xmax, ymax = cx + W[i]/2, cy + H[i]/2 #np.max(after.xx), np.max(after.yy)#box右下角坐标
+                    bbox.append([xmin, ymin, xmax, ymax])
+                    points.append(after.coords.reshape(-1))#4个点展开
+general.py
+def dirab2WH(dirab):
+    assert(dirab.shape[1]==4)
+    cos_t, sin_t, a,b = dirab[:,0],dirab[:,1],dirab[:,2],dirab[:,3]
+    acos,bsin = a*cos_t, b*sin_t
+    acos2,bsin2=acos*acos,bsin*bsin
+    asin,bcos = a*sin_t, b*cos_t
+    asin2,bcos2=asin*asin,bcos*bcos
+    return 2*torch.sqrt(acos2+bsin2), 2*torch.sqrt(asin2+bcos2)
+dataaug_poly.py
+ W,H = dirab2WH(dir_targets)
+
+3.tpab这里没有考虑iou
+tpab[b, aab, gj, gi] = 1.0
+lpab *= self.hyp['pab']#也可以把这里改小一点
+
+4.ldir这里可以考虑换成点积
+ldir += self.BCEdir(cos_sin, tdir[i])#dir_scale_objs
+opt.fold = 2  这里也要注意能否改成(1-点积)**2
+注意推理和训练loss对应上
+
+5.model/yolo.py
+顺序颠倒了一下，其实没必要，他就是要在内部颠倒anchor的顺序，按顺序排列
+            m.anchors /= m.stride.view(-1, 1, 1)
+            check_anchor_order(m)
+搜索整个工程，有好几处check_anchor_order都搞错了
+
+6.添加了自动计算anchors，函数check_anchors
+在train.py里面调用autoanchor里面的函数check_anchors
+
+7.pdir输出是否做单位化处理
+这一点还需进一步验证比对，注意训练和推理是否sigmond和norm要保持一致
+
+
+
+
+后期改进计划--2023.6.8
+1.objgt=0随机挑选
+2.obj限制上限
+3.out_of_image iou
+4.shift aug

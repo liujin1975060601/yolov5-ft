@@ -1,0 +1,45 @@
+1.Train Framework
+train.py
+
+调用主流程是
+->opt = parse_opt() .. main()
+-->train()
+
+加载模型
+pretrained = weights.endswith('.pt')
+    if pretrained:
+        with torch_distributed_zero_first(LOCAL_RANK):
+            weights = attempt_download(weights)  # download if not found locally
+        ckpt = torch.load(weights, map_location=device)  # load checkpoint
+        model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)
+训练配置
+def parse_opt(known=False):
+    ....
+    opt.weights = 'weights/yolov5l.pt'
+    opt.cfg = 'models/yolov5l-guge.yaml'#模型架构配置
+    opt.data = 'data/Guge.yaml'#数据集配置
+    # opt.noval = False
+    opt.batch_size = 8
+    opt.epochs = 100
+    opt.imgsz = 768#图像大小
+    opt.resume = True #True
+    # opt.noautoanchor = True
+    # # opt.single_cls = True
+    # opt.hyp = 'data/hyps/hyp.ucas.yaml'
+    opt.fold = 2#回归2倍角
+    return opt
+
+注意：opt.cfg = 'models/yolov5l-guge.yaml'#模型架构配置
+已经基本可以独立于数据集了
+opt.data = 'data/Guge.yaml'#数据集配置
+因此更换数据集可以只修改opt.data！
+输出模块Detect里面会再增加一个输出层，确保输出通道数是na(5+nc)，所以不用在模型定义里面显式定义通道数和nc符合
+
+以下是Detect模块代码中确保了输出通道数是na(5+nc)的部分。
+__init__()构造函数里，又经过了一个卷积层确保了输出通道数是na(5+nc)，所以不用在模型定义里面显式定义通道数和nc符合
+self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)
+
+def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])#注意这里经过了self.m卷积函数之后，模型的输出通道数量与na(5+nc)符合了！

@@ -1,0 +1,32 @@
+0.基本常识
+-->tensor和array之间相互转换，两种数组不能混杂运算，必须统一
+tensor转array
+a_tensor.numpy()
+array转tensor
+torch.from_numpy(a_array)
+-->了解多维数组的几种基本操作
+过滤a[a>3]
+检索a[b[n],c[n],d[n]]-->a[n]
+赋值a[b[n],c[n]]=1
+
+nonzero的两种用法
+nonzero地址检索
+cls_idx = torch.nonzero(cls_mask).squeeze(1)
+            if(cls_idx.shape[0]>0):
+                if(mask_dir!=[] and mask_dir[clss]>0):
+                    pcls = pRot[cls_idx, :9]#pcls[nt_filt,9]
+nonzero for循环
+sim_vec = torch.nonzero(anchor_data[..., 4] > conf_thres)
+                #sim_vec[nt,2] #取得所有非零元素True的坐标集合
+                if len(sim_vec) > 0:
+                    for x, y in sim_vec:
+                        targets.append(anchor_data[x][y])#[nt][5+c]
+                        tinfo.append([i, batch_idx, anchor_idx, x, y])#[nt][i, batch_idx, anchor_idx, x, y]
+
+按pi_dir[..., 0]的shape创建一个填0数组 tpab = torch.zeros_like(pi_dir[..., 0], device=device)
+重复循环数组a.repeat(n)
+a[:,1:]数组切片基本知识
+
+
+#gxi[nt_filt,2] 注:(gxy%1 < g)的shape是[nt_filt,2], (gxy%1 < g).T转置后变成[2,nt_filt],分解给j[nt_filt],k[nt_filt]
+                        j, k = ((gxy % 1 < g) & (gxy > 1)).T  #j[nt_filt]  k[nt_filt] 之所以要求gxy > 1是因为gxy==0无左邻域或上邻域

@@ -1,0 +1,16 @@
+操作运行常见错误：
+1.基本操作
+一开始设置opt.resume = True，注意只跑一次，否则每次跑都会在run/train/里面新建一个exp文件夹
+有时候运行val.py会在runs/train/文件夹里新增一些废弃文件夹，这时在运行train.py就会通过
+ckpt_path = get_latest_run_exp(search_dir='./runs/train/')
+而ckpt_path这个废弃文件夹里没有last文件，if(os.path.exists(ckpt_path+'/weights/last.pt')):条件不满足，resume=False
+这行代码跑到这个新增的废弃文件夹里面，就不能接着原来的工程继续训练了，要特别注意!
+
+2.运行val.py时，默认的运行地址在这里设置：
+parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train/exp/weights/best.pt', help='model.pt path(s)')
+这个地址
+runs/train/exp/weights/best.pt
+最好仔细检查一下，别搞错了
+
+3.
+

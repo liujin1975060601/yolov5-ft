@@ -1,0 +1,6 @@
+curve_iou.py   for hiou vs ft_iou
+fftcurve.py    dota1.5 for remote object detection
+fftKpt.py      for 32pts contour dataset
+fftPoly.py     for glMarker pol data trans to ft_infer
+fftTrans.py    for voc or coco2017 dataset
+coco-ft.py        for coco2017 instance segmentation

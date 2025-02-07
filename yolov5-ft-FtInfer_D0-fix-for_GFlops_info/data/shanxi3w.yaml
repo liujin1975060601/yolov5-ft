@@ -1,0 +1,18 @@
+# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# COCO128 dataset https://www.kaggle.com/ultralytics/coco128 (first 128 images from COCO train2017)
+# Example usage: python train.py --data coco128.yaml
+# parent
+# ├── yolov5
+# └── datasets
+#     └── coco128  ← downloads here
+
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: E:\DATA\Bridge\train  # dataset root dir
+train: train.txt  # train images (relative to 'path') 128 images
+val: val.txt  # val images (relative to 'path') 128 images
+test:  # test images (optional)
+
+# Classes
+nc: 83  # number of classes
+names: ["混凝土裂缝", "渗水", "剥落、露筋", "空洞、孔洞", "蜂窝、麻面", "剥落、掉角", "护套裂缝", "裂缝", "排水不畅", "破损", "变形", "防护层破损", "混凝土碳化", "钢筋锈蚀", "排水不良", "锚具锈蚀", "锚具内潮湿", "无", "混凝土保护层厚度", "钢支座组件或功能缺陷", "预应力构件损伤", "上下座板（盆）锈蚀", "锚固区缺陷", "杂土填塞", "混凝土碳化、腐蚀", "失效", "模板未拆除", "位移、转角超限", "盆式支座组件损坏", "螺纹、螺帽松动或锚螺杆剪切", "污损或损坏", "挡块破损", "泄水管、引水槽缺陷", "台背排水不畅", "垫石破损", "撞坏、缺失", "板式支座位置串动、脱空或剪切超限", "杂土堆积", "盆式支座位移、转角超限", "剥落", "坑洞", "脱落、缺失", "凹凸不平", "冲蚀", "板式支座缺陷", "桥头跳车", "板式支座老化变质、开裂", "拱起", "照明设施缺失", "冲刷、掏空", "缺陷", "风化", "排气孔堵塞", "磨损", "错台", "橡胶条破损", "聚四氟乙烯滑板磨损", "混凝土缺损", "冲刷", "灰缝脱落", "挡块紧贴", "土体挤压梁体", "活动支座滑动面不平整、生锈咬死", "锈蚀", "拱上结构裂缝", "主拱圈裂缝", "模板未拆除 ", "支座遮挡", "损坏", "冲刷、变形", "磨光、脱皮、露骨", "圬工砌体缺陷", "沉降", "鼓肚、砌体松动", "接缝料损坏", "灰缝松散脱落", "立柱或立墙倾斜、开裂或脱落", "砌块断裂、脱落", "位移", "主拱圈变形", "变形、位移", "堵塞", "泛油"]

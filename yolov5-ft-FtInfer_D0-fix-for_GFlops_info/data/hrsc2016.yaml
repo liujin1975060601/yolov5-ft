@@ -1,0 +1,15 @@
+
+path: /media/liu/088d8f6e-fca3-4aed-871f-243ad962413b/datas/HRSC2016/
+train: train_val/images 
+val: test/images  
+
+
+# Classes
+nc: 1  # number of classes
+
+names: ['ship']
+
+mask_dir: [2]
+
+val_epoch: 20
+

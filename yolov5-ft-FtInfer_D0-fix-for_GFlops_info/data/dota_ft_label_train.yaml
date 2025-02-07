@@ -1,0 +1,19 @@
+
+# dota768
+# path: /home/LIESMARS/2019286190105/datasets/final-master/DOTA/DOTA1.0-1.5
+path: /media/liu/f4854541-32b0-4d00-84a6-13d3a5dd30f2/datas/DOTA1.5/Label_LiuJin_12.30/Label_LiuJin
+
+train: train/images
+val: val/images
+# val: patches/images
+# val: val500/val_dota.txt
+# val_big: big/images
+
+nc: 3
+names: ['harbor','swimming-pool','plane']
+#mask_dir: [2,2,0,0,2,2,2,2,2,2,2,2,0,2,0,0]
+
+ft_coef: 7
+lamda: 1.0
+d0: 2.0
+val_epoch: 40

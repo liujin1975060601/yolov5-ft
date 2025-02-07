@@ -1,0 +1,35 @@
+#4090
+#path: /media/liu/088d8f6e-fca3-4aed-871f-243ad962413b/datas/GuGe
+#4090-2
+#path: /media/liu/f4854541-32b0-4d00-84a6-13d3a5dd30f2/datas/GuGe  # dataset root dir
+#zh3090
+#path: /home/liu/data/home/liu/workspace/darknet/datas/GuGe/
+#fy3090
+#path: E:/datas/GuGe
+#CatBug
+path: E:/datas/GuGe
+#TB
+#path: /media/liu/124CDDC24CDDA0B1/datas/GuGe
+#4090x2 svr
+#path: /home/user/datas/Guge/patches
+
+
+train: patches/images
+val: val/images
+# val_big: big/images
+
+# Classes
+# nc: 16  # number of classes
+# names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle',
+#                   'ship', 'tennis-court',
+#                   'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool',
+#                   'helicopter', 'container-crane']
+
+nc: 19
+names: ['frigate', 'not boats', 'Combat boat', 'Military auxiliary ship', 'Other military ships', 'submarine',
+        'Supply ship', 'Tanker',
+        'bulk carrier', 'Container ship', 'Other civil ships', 'destroyer', 'uncertain', 'Fishing boat',
+        'Ro-Ro Ship', 'Sightseeing Boat', 'Cruiser', 'Amphibious carrier', 'aircraft carrier']
+# mask_dir: [2,0,2,2,2,2,2,2,2,2,2,2,0,2,2,2,2,2,2]
+ft_coef: 4
+val_epoch: 10

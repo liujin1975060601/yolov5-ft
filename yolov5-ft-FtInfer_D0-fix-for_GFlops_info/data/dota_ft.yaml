@@ -1,0 +1,34 @@
+
+# dota768
+#4090
+#path: /media/liu/088d8f6e-fca3-4aed-871f-243ad962413b/datas/DOTA1.5
+#4090-2
+#path: /media/liu/f4854541-32b0-4d00-84a6-13d3a5dd30f2/datas/DOTA1.5  # dataset root dir
+#zh3090
+#path: /home/liu/data/home/liu/workspace/darknet/datas/DOTA1.5
+#fy3090
+#path: E:/datas/DOTA1.5
+#CatBug
+path: E:/datas/DOTA1.5
+#TB
+#path: /media/liu/124CDDC24CDDA0B1/datas/dota1.5
+#4090x2 svr
+#path: /home/user/datas/dota1.5
+
+
+train: patches/images
+val: val/patches/images
+# val: patches/images
+# val: val500/val_dota.txt
+# val_big: big/images
+
+nc: 16
+names: ['plane','ship','storage-tank', 'baseball-diamond',
+'tennis-court','basketball-court','ground-track-field', 'harbor',
+'bridge', 'large-vehicle','small-vehicle', 'helicopter', 
+'roundabout', 'soccer-ball-field', 'swimming-pool', 'cc']
+#mask_dir: [2,2,0,0,2,2,2,2,2,2,2,2,0,2,0,0]
+
+ft_coef: 4
+val_epoch: 20
+val_count: 100

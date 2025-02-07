@@ -1,0 +1,67 @@
+loss部分#####################################################
+3.loss
+大部分内容都在
+utils/loss.py
+里面
+调用ComputeLoss::里面的__call__
+里面
+tcls, tbox, indices, anchors, tdir, tab, anchorsab = self.build_targets_dir(pH, pD, targets, dir_targets)  # targets
+        #tcls[nl][nt]
+        #tbox[nl][nt,4]
+        #indices[nl][5(b, a, gj, gi, aab)][nt]
+        #anchors[nl][nt,2]
+        #tdir[nl][nt,2]
+        #tab[nl][nt,2]
+        #anchorsab[nl][nt,2]
+是把标注数据集dir_targets转换成一个个切片独立的tensor，以gt目标为单位，得到每个gt目标对应的anchors等用于计算loss的tensor
+注意tensor的各种过滤语法糖写法，和多维检索语法糖写法
+
+loss里面这段代码的理解：
+# Objectness
+                score_iou = iou.detach().clamp(0).type(tobj.dtype)
+                #score_iou[nt]
+                if self.sort_obj_iou:
+                    sort_id = torch.argsort(score_iou)
+                    b, a, gj, gi, score_iou = b[sort_id], a[sort_id], gj[sort_id], gi[sort_id], score_iou[sort_id]
+                tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * score_iou  # iou ratio
+它是按从小到大顺序排序的，这样后面赋值的语句会覆盖前面的语句，也就是大的iou会覆盖小iou
+一般情况下一个目标涉及多个不同的网格anchors，也就是不会重复，这种排序就没啥用。
+但也有重复的情况，同样的anchor重复赋值，就以iou最大的值为准（放在最后刷新）
+
+
+build_targets_dir里面：
+1.# Matches anchors for all gt objects
+        # 筛选wh的anchor,得到真值与各个anchors的相似性，越接近1越相似
+        #[na,nt,2]/[na,?,?]=r[na,nt,2]
+        #None是补充插入扩展一个长度=1的维度，后面的维度[2]可以省略，长度=1的维度可以在矩阵除法过程中做广播
+        #r = t[..., 4:6] / anchors[:, None]  # wh ratio
+        r = t[:, :, 4:6] / anchors[:, None]  # wh ratio
+        #r[na,nt,2]
+        #第1个max(r, 1 / r)得到一个大于1的数，越接近1越相似，找到与对应anchors的相似度
+                #两个维度r[na,nt,2]的数组之间找最大值维度依然是[na,nt,2]
+        #第2个max(2)是在[na,nt,2]的第2个维度上找最大值(对应的值是[0],索引(0,1)是[1])
+        # 得到torch.max(r, 1 / r).max(2)[0]的维度[na,nt]，因此j是一个[na,nt]的bool数组
+        j = torch.max(r, 1 / r).max(2)[0] < self.hyp['anchor_t']  # compare
+        #j[na,nt]
+
+2.offsets for regression
+b, c = t[:, :2].long().T  # batch, class
+                gxy = t[:, 2:4]  # grid xy  #gxy[nt_filt3,2]
+                gwh = t[:, 4:6]  # grid wh  #gwh[nt_filt3,2]
+                gij = (gxy - offsets).long() #gij[nt_filt3,2] gij是目标对应的网格整数编号，比如因为gxy里横坐标偏移<0.5
+                gi, gj = gij.T  # grid xy indices
+
+# Append
+                a = t[:, 6].long()  # anchor indices
+                #a[nt_filt3]
+                #anchorsab[na,2]
+                #assert(nt==0 or t_dir.shape[0]>0)
+                #max_an_iou_idx[nt_filt3]
+
+                indice = (b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1), max_an_iou_idx)
+                #indice[5(b, a, gj,gi,max_an_iou_idx)][nt_filt3]
+                indices.append(indice)  # image, anchor, grid indices
+                #indices[nl][5(b, a, gj,gi,max_an_iou_idx)][nt_filt3]
+                tbox.append(torch.cat((gxy - gij, gwh), 1))  # box
+这段代码我看了10次了，最后2次看懂了，但过久还是容易忘，
+这次的收获是从下往上看，先看最后面这个gxy - gij，再往上看，一切疑惑都能解释了，如果从上往下看，会非常困惑！

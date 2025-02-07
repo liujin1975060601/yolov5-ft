@@ -1,0 +1,26 @@
+
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+# path: D:\BaiduNetdiskDownload\UCAS_AOD\UCAS50  # dataset root dir
+# train: images/train 
+# val: images/train 
+
+
+path: /home/LIESMARS/2019286190105/datasets/final-master/UCASALL/UCAS
+# train: train/images
+# val: val/images
+
+# path: /home/LIESMARS/2019286190105/datasets/final-master/UCASALL/ucas-cut-200
+train: train/images
+val: val/images
+
+
+# path: /home/LIESMARS/2019286190105/datasets/final-master/UCAS50
+# train: images/train
+# val: images/val
+
+# Classes
+nc: 2  # number of classes
+names: ['plane', 'car']
+
+

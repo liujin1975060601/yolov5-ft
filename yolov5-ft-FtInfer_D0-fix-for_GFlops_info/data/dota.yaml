@@ -1,0 +1,20 @@
+
+# dota768
+# path: /home/LIESMARS/2019286190105/datasets/final-master/DOTA/DOTA1.0-1.5
+path: /media/liu/088d8f6e-fca3-4aed-871f-243ad962413b/datas/DOTA1.5
+
+train: patches/images
+val: val/patches/images
+# val: patches/images
+# val: val500/val_dota.txt
+# val_big: big/images
+
+nc: 16
+names: ['plane','ship','storage-tank', 'baseball-diamond',
+'tennis-court','basketball-court','ground-track-field', 'harbor',
+'bridge', 'large-vehicle','small-vehicle', 'helicopter', 
+'roundabout', 'soccer-ball-field', 'swimming-pool', 'cc']
+mask_dir: [2,2,0,0,2,2,2,2,2,2,2,2,0,2,0,0]
+
+#ft_coef: 4
+val_epoch: 20
