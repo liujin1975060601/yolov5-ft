@@ -15,8 +15,8 @@ You can cite this paper as follows:
 }
 ```
 You can contact us through:
--Tel,WeChat:13397188592
--QQEmail:41038331@qq.com
+- Tel,WeChat:13397188592
+- QQEmail:41038331@qq.com
 
 yolo-ft Object Detection Demos
 ![Image description](demos/coco2017/000000013729.jpg)
