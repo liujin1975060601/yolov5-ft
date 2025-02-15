@@ -19,6 +19,8 @@ You can contact us through:
 - Tel,WeChat:13397188592
 - QQEmail:41038331@qq.com
 
+YaoRong Cen and I designed the code of this project. Thanks for everyone's contributions.
+
 yolo-ft Object Detection Demos
 ![Image description](demos/coco2017/000000013729.jpg)
 ![Image description](demos/coco2017/000000014226.jpg)
