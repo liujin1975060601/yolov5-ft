@@ -56,13 +56,3 @@ This code is an improvement based on the YOLOv5 architecture, with the training 
 - `detect.py` starts image or video detection  
   (specify model weights `weights` and the source folder path to be detected `source`).
 
-
-## Install DOTA_Devkit
-If you are on Windows, please compile according to the following steps first.
-```
-sudo apt-get install swig
-cd DOTA_devkit/polyiou
-swig -c++ -python csrc/polyiou.i
-python setup.py build_ext --inplace
-
-```
