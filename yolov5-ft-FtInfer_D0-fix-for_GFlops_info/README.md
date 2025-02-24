@@ -6,7 +6,7 @@ https://ieeexplore.ieee.org/document/10833868
 
 You can cite this paper as follows:
 ```bibtex
-@article{greenwade93,
+@article{FourierDetByJinLiu,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
     title   = "Enhancing Object Detection With Fourier Series",
     year    = "2025",
