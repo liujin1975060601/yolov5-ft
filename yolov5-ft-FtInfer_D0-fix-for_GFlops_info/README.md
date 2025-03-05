@@ -19,6 +19,13 @@ You can contact us through:
 - Tel,WeChat:13397188592
 - QQEmail:41038331@qq.com
 
+YaoRong Cen and I designed the code of this project. Thanks for everyone's contributions.
+Project Start Date: October 2019, Software Completion Date: April 2020,
+Experimental Testing Period: 2020 to 2024,
+Paper Submission Date: March 2024, Acceptance Date: December 30, 2024,
+Publication Date: January 8, 2025.
+Repository Upload Date: January 2025.
+
 yolo-ft Object Detection Demos
 ![Image description](../demos/coco2017/000000013729.jpg)
 ![Image description](../demos/coco2017/000000014226.jpg)
