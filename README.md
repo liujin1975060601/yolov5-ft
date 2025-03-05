@@ -9,7 +9,7 @@ You can cite this paper as follows:
 @article{FourierDetByJinLiu,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
     title   = "Enhancing Object Detection With Fourier Series",
-    year    = "2025",
+    year    = "January 8, 2025",
     journal = "IEEE Transactions on Pattern Analysis and Machine Intelligence",
     DOI = 10.1109/TPAMI.2025.3526990
     pages   = "1-17"
@@ -20,6 +20,11 @@ You can contact us through:
 - QQEmail:41038331@qq.com
 
 YaoRong Cen and I designed the code of this project. Thanks for everyone's contributions.
+Project Start Date: October 2019, Software Completion Date: April 2020,
+Experimental Testing Period: 2020 to 2024,
+Paper Submission Date: March 2024, Acceptance Date: December 30, 2024,
+Publication Date: January 8, 2025.
+Repository Upload Date: January 2025.
 
 yolo-ft Object Detection Demos
 ![Image description](demos/coco2017/000000013729.jpg)
