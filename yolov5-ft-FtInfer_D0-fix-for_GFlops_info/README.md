@@ -9,10 +9,13 @@ You can cite this paper as follows:
 @article{FourierDetByJinLiu,
     author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
     title   = "Enhancing Object Detection With Fourier Series",
-    year    = "2025",
+    year    = "January 8, 2025",
     journal = "IEEE Transactions on Pattern Analysis and Machine Intelligence",
-    DOI = 10.1109/TPAMI.2025.3526990
-    pages   = "1-17"
+    volume  = "47",
+    number  = "4",
+    pages   = "2581 - 2596",
+    doi = 10.1109/TPAMI.2025.3526990,
+    month   = "January",
 }
 ```
 You can contact us through:
