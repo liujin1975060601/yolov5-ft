@@ -22,7 +22,7 @@ You can contact us through:
 - Tel,WeChat:13397188592
 - QQEmail:41038331@qq.com
 
-YaoRong Cen and I designed the code of this project. Thanks for everyone's contributions.
+Thanks for everyone's contributions.
 
 Project Start Date: October 2019, Software Completion Date: April 2020,
 Experimental Testing Period: 2020 to 2024,
