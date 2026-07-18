@@ -1,9 +1,25 @@
 # yolov5-ft
-YOLOv5-FT-GNF is a Fourier series-based object detection model built upon the YOLO architecture, designed to detect objects of arbitrary shapes in complex environments. Unlike traditional object detection, YOLOv5-FT-GNF outputs a semantic equation constructed from the Fourier series of the target, providing a more precise and detailed description of the object.
+YOLOv5-FT is a Fourier series-based object detection model built upon the YOLO architecture, designed to detect objects of arbitrary shapes in complex environments. Unlike traditional object detection, YOLOv5-FT outputs a semantic equation constructed from the Fourier series of the target, providing a more precise and detailed description of the object. The paper was published in
 
+[1]Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu, Enhancing Object Detection With Fourier Series, IEEE Transactions on Pattern Analysis and Machine Intelligence, 08 January 2025, pp1-17, Print ISSN: 0162-8828, CD:2160-9292, ISSN:1939-3539, DOI: 10.1109/TPAMI.2025.3526990
+https://ieeexplore.ieee.org/document/10833868
+
+You can cite this paper as follows:
+```bibtex
+@article{FourierDetByJinLiu,
+    author  = "Jin Liu; Zhongyuan Lu; Yaorong Cen; Hui Hu; Zhenfeng Shao; Yong Hong, Ming Jiang, Miaozhong Xu",
+    title   = "Enhancing Object Detection With Fourier Series",
+    year    = "January 8, 2025",
+    journal = "IEEE Transactions on Pattern Analysis and Machine Intelligence",
+    volume  = "47",
+    number  = "4",
+    pages   = "2581 - 2596",
+    doi = 10.1109/TPAMI.2025.3526990,
+    month   = "January",
+}
+```
 You can contact us through:
 - Tel,WeChat:13397188592
-- EMail:JLiu@sgg.whu.edu.cn
 - QQEmail:41038331@qq.com
 
 YaoRong Cen and I designed the code of this project. Thanks for everyone's contributions.
