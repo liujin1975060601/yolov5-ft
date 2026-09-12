@@ -1,0 +1,4 @@
+新版DOTA_devkit
+这个工程还有不少依赖以前那个iou_poly的, 得旧的也编译一次;或者全都改成用新的
+新的polyiou_cpu不再用swig, 用的cython辅助编译, 其他机器编译前要确认有cython库, 没有就pip install cython就可以了; 
+要注意无论新旧都是和python的版本绑定的, 你要在跑yolo的同一个环境下编译, 不然不一定能使用。

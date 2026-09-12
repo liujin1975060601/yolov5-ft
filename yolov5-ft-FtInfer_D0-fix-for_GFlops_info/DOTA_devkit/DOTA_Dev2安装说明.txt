@@ -1,0 +1,13 @@
+Ubuntu系统安装
+1.进入工程，配置好python环境，确认要安装好cython库，没有安装的话就：pip install cython
+2.在终端打开polyiou_cpu文件夹，修改build.sh权限： chmod +x ./build.sh
+3.执行./build.sh，编译好之后文件夹内有so
+
+windows系统安装
+1.先安装好F:/Install/vs_BuildTools.exe
+2.cd DOTA_devkit/polyiou_cpu
+3.运行build.bat  生成xxx.pyd文件
+
+和旧polyiou区别， iou_poly就提供ptsA，ptsB两个多边形的交集
+现在这个提供一组ptsA， 一组ptsB，提供绝对坐标，原理：先提取水平框，没算水平框iou;如果用相对坐标0～1就会出错
+poly
